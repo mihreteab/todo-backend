@@ -39,4 +39,26 @@ async function login (req, res, next) {
     return res.status(200).json({ token: authToken })
 }
 
-export { register, login }
+async function findOrCreateUser(profile) {
+  const email = profile.emails[0].value
+  const name = profile.displayName
+
+  let result = await db.execute({
+    sql: 'SELECT * FROM users WHERE email = ?',
+    args: [email]
+  })
+
+  if (result.rows.length > 0) {
+    return result.rows[0]
+  }
+
+  // Create new user
+  result = await db.execute({
+    sql: 'INSERT INTO users (name, email) VALUES (?, ?) RETURNING *',
+    args: [name, email] // No password for OAuth
+  })
+
+  return result.rows[0]
+}
+
+export { register, login, findOrCreateUser }
